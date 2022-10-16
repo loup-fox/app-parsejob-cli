@@ -1,8 +1,6 @@
-import fs from "fs";
 import type { Arguments, Argv } from "yargs";
-import { getApi } from "../inject/index.js";
+import { getApi, getFileSystem } from "../inject/index.js";
 import { Parser } from "../api/index.js";
-import { readFileIfExists } from "../helpers/readFileIfExists.js";
 
 export const command: string = "clone <parser>";
 
@@ -15,13 +13,15 @@ export async function handler(
   }>
 ): Promise<void> {
   const api = getApi();
+  const fs = getFileSystem();
   const body: Partial<Parser> = {};
-  body.sourceCode = await readFileIfExists(`./src/code.js`, "");
-  body.sourceCodeAnonymization = await readFileIfExists(
+  body.sourceCode = fs.readFileIfExistsSync(`./src/code.js`, "");
+  body.sourceCodeAnonymization = fs.readFileIfExistsSync(
     "./src/anonymization.js",
     ""
   );
-  body.sourceCodePostParser = await readFileIfExists("./postScript.js", "");
+  body.sourceCodePostParser = fs.readFileIfExistsSync("./postScript.js", "");
+  await api.putParser(args.parser, body);
 }
 
 export function builder(yargs: Argv<{}>) {

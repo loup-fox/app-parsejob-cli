@@ -1,6 +1,5 @@
-import fs from "fs";
 import type { Arguments, Argv } from "yargs";
-import { getApi } from "../inject/index.js";
+import { getApi, getFileSystem } from "../inject/index.js";
 
 export const command: string = "clone <parser>";
 
@@ -12,6 +11,7 @@ export async function handler(
     parser: string;
   }>
 ): Promise<void> {
+  const fs = getFileSystem();
   const api = getApi();
   const parserName = args.parser;
   if (fs.existsSync(`./${parserName}`)) {
@@ -30,7 +30,12 @@ export async function handler(
     `./${parserName}/src/anonymization.js`,
     parser.sourceCodeAnonymization ?? ""
   );
-  fs.writeFileSync(`./${parserName}/samples/.config.json`, "{}");
+  fs.writeFileSync(
+    `./${parserName}/samples/config.pj.json`,
+    JSON.stringify({
+      parser: parserName,
+    })
+  );
 }
 
 export function builder(yargs: Argv<{}>) {

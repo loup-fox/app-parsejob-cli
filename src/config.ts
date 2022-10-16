@@ -1,6 +1,7 @@
-import fs from "fs";
 import path from "path";
 import { env } from "node:process";
+import { IFileSystem } from "./helpers/FileSystem";
+import { z } from "zod";
 
 const HOME = env.HOME;
 if (!HOME) {
@@ -13,19 +14,25 @@ const DEFAULT_DATA = {
   baseUrl: "https://parsejobv4api.production.internal.foxapi.xyz/api",
 };
 
-export interface IConfig {
-  token?: string;
-  baseUrl?: string;
-  configFile?: string;
+export const BareConfig = z.object({
+  baseUrl: z.string(),
+  token: z.string().optional(),
+  configFile: z.string().optional(),
+});
+export type BareConfig = z.infer<typeof BareConfig>;
+
+export interface IConfig extends BareConfig {
   set(data: Partial<IConfig>): Promise<void>;
 }
 
 export class Config implements IConfig {
-  private _config?: IConfig;
+  private _config?: BareConfig;
+
+  private constructor(private fs: IFileSystem) {}
 
   private get config() {
     if (!this._config) {
-      this._config = Config.load();
+      this._config = Config.load(this.fs);
     }
     return this._config;
   }
@@ -40,24 +47,19 @@ export class Config implements IConfig {
 
   set(data: Partial<IConfig>) {
     this._config = Object.assign({}, this.config, data);
-    Config.write(this._config);
+    Config.write(this.fs, this._config);
     return Promise.resolve();
   }
 
-  private static write(data?: IConfig) {
+  private static write(fs: IFileSystem, data?: BareConfig) {
     const json = JSON.stringify(data ?? DEFAULT_DATA, null, 2);
     fs.writeFileSync(CONFIG_FILE, json, "utf-8");
   }
 
-  private static load(): IConfig {
+  private static load(fs: IFileSystem): BareConfig {
     if (!fs.existsSync(CONFIG_FILE)) {
-      Config.write();
+      Config.write(fs);
     }
-    return JSON.parse(
-      fs.readFileSync(CONFIG_FILE, {
-        encoding: "utf-8",
-        flag: "r",
-      })
-    );
+    return BareConfig.parse(JSON.parse(fs.readFileSync(CONFIG_FILE)));
   }
 }

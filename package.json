@@ -19,6 +19,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/inquirer": "^9.0.2",
+    "@types/jwt-decode": "^3.1.0",
     "@types/lodash": "^4.14.186",
     "@types/node": "^18.11.0",
     "@types/yargs": "^17.0.13",
